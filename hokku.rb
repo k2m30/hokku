@@ -105,5 +105,6 @@ str = Net::HTTP.get(URI(address)).encode!('utf-8', 'koi8-r')
 
 hash = syllables str
 hokku hash, [5, 7, 5]
-p '--------------'
+puts '------------------------------------------'
+puts
 hokku hash, [5, 7, 5, 7, 7]
