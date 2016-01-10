@@ -3,7 +3,7 @@ require 'open-uri'
 require 'net/http'
 
 def syllables(str)
-  vowels = %w(у е ы а о э ё я и ю У Е Ы А О ЭЯ И Ю Ё)
+  vowels = %w(у е ы а о э ё я и ю У Е Ы А О Э Я И Ю Ё)
   result = []
   str.gsub!(/["-]/, '').gsub!("\n", ' ')
   str.split(' ').each do |word|
@@ -35,6 +35,52 @@ def find(str, start_word_index, number)
   nil
 end
 
+def hokku(hash, syllables_array)
+  hokku_candidates = []
+  0.upto hash.size do |i|
+    hokku_candidates << find(hash, i, syllables_array.inject(&:+))
+  end
+  hokku_candidates.uniq!.compact!
+
+  hokku_candidates[0..-1].each do |candidate|
+    begin
+      hokku = []
+
+      first_word = candidate.first.first.first
+      next unless first_word.start_with?('Й', 'Ц', 'У', 'К', 'Е', 'Н', 'Г', 'Ш',
+                                         'Щ', 'З', 'Х', 'Ф', 'Ы', 'В', 'А', 'П',
+                                         'Р', 'О', 'Л', 'Д', 'Ж', 'Я', 'Ч', 'С',
+                                         'М', 'И', 'Т', 'Ь', 'Б', 'Ю')
+
+      last_word = candidate.first.last.first
+      next unless last_word.end_with?('.', '!', '?')
+
+      index = 0
+      size = 0
+      syllables_array.each do |string_size|
+        result = find(candidate.first, index, string_size)
+
+        break if result.nil?
+        index = result.last+1
+        size += result.first.size
+        break if result.last+1!=size
+        hokku << result
+      end
+
+      next if hokku.map{|a| a.first.map(&:last).inject(:+)}.inject(:+) != syllables_array.inject(&:+)
+
+      hokku = hokku.map{|a| a.first.map(&:first).join(' ')}.join("\n")
+      puts hokku
+      puts
+
+    rescue => e
+      p candidate
+      p e.message
+      pp e.backtrace[0..4]
+    end
+  end
+end
+
 str = 'Для меня деньги - бумага, для тебя - свобода.
 На американскую мечту сегодня мода.
 К этой мечте стремишься ты, -
@@ -43,64 +89,21 @@ str = 'Для меня деньги - бумага, для тебя - свобо
 Солнечным утром
 Неожиданный
 Затаился лосоось
-В кустах черники
+В кустах черники.
 
 Ты - менеджер среднего звена.
 Ты не работаешь "Под", ты работаешь "На".
 Твой этот век - твоя компьютерная эра.
 Главное не человек, а его карьера.'
 
-address = 'http://lib.ru/POEZIQ/TWARDOWSKIJ/terkin.txt_Ascii.txt'
+# address = 'http://lib.ru/POEZIQ/TWARDOWSKIJ/terkin.txt_Ascii.txt'
 # address = 'http://lib.ru/SHAKESPEARE/sonets.txt_Ascii.txt'
 
 # address = 'http://lib.ru/JAPAN/BASE/base.txt_Ascii.txt'
-# address = 'http://lib.ru/POEZIQ/ahmadulina.txt_Ascii.txt'
+address = 'http://lib.ru/POEZIQ/ahmadulina.txt_Ascii.txt'
 str = Net::HTTP.get(URI(address)).encode!('utf-8', 'koi8-r')
 
-
-
 hash = syllables str
-hokku_candidates = []
-0.upto hash.size do |i|
-  hokku_candidates << find(hash, i, 17)
-end
-hokku_candidates.uniq!.compact!
-
-
-hokku_candidates[0..-1].each do |candidate|
-  begin
-    hokku = []
-    result = nil
-    result2 = nil
-    result3 = nil
-
-    first_word = candidate.first.first.first
-    next unless first_word.start_with?('Й', 'Ц', 'У', 'К', 'Е', 'Н', 'Г', 'Ш', 'Щ', 'З', 'Х', 'Ф', 'Ы', 'В', 'А', 'П', 'Р', 'О', 'Л', 'Д', 'Ж', 'Я', 'Ч', 'С', 'М', 'И', 'Т', 'Ь', 'Б', 'Ю')
-
-    last_word = candidate.first.last.first
-    next unless last_word.end_with?('.')
-
-    result = find(candidate.first, 0, 5)
-    next if result.nil? || result.last+1!=result.first.size
-    hokku << result.first.map(&:first).join(' ')
-
-    result2 = find(candidate.first, result.last+1, 7)
-    next if result2.nil? || result2.last+1!=result.first.size + result2.first.size
-
-    hokku << result2.first.map(&:first).join(' ')
-    result3 = find(candidate.first, result2.last+1, 5)
-
-    hokku << result3.first.map(&:first).join(' ')
-    hokku = hokku.join("\n")
-
-    puts hokku
-    puts
-
-  rescue => e
-    p candidate
-    p [result, result2, result3]
-    p e.message
-    pp e.backtrace[0..4]
-  end
-
-end
+hokku hash, [5, 7, 5]
+p '--------------'
+hokku hash, [5, 7, 5, 7, 7]
