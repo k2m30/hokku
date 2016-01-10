@@ -104,7 +104,13 @@ address = 'http://lib.ru/POEZIQ/ahmadulina.txt_Ascii.txt'
 str = Net::HTTP.get(URI(address)).encode!('utf-8', 'koi8-r')
 
 hash = syllables str
+
+puts 'Hokku'
+puts '------------------------------------------'
+puts
 hokku hash, [5, 7, 5]
+
+puts 'Tanka'
 puts '------------------------------------------'
 puts
 hokku hash, [5, 7, 5, 7, 7]
