@@ -1,11 +1,31 @@
 require 'pp'
 require 'open-uri'
 require 'net/http'
+require 'sinatra'
+
+class Word
+  attr_accessor :body, :syllables
+
+  VOWELS = %w(у е ы а о э ё я и ю)
+
+  def new(body)
+    @body = body.gsub(/\W+/, '')
+    @syllables = count_syllables
+  end
+
+  def count_syllables
+    @syllables = 0
+    VOWELS.each do |vowel|
+      @syllables += @body.count(vowel)
+    end
+  end
+end
+
 
 def syllables(str)
   vowels = %w(у е ы а о э ё я и ю У Е Ы А О Э Я И Ю Ё)
   result = []
-  str.gsub!(/["-]/, '').gsub!("\n", ' ')
+  str.gsub!("\n", ' ')
   str.split(' ').each do |word|
     syl = 0
     vowels.each do |vowel|
@@ -26,7 +46,7 @@ def find(str, start_word_index, number)
     count = count + word.last
     phrase << word
     if count > number
-      return find(str, start_word_index+1, number)
+      return find(str, start_word_index + 1, number)
     end
     if count == number
       return phrase, i + start_word_index
@@ -35,12 +55,16 @@ def find(str, start_word_index, number)
   nil
 end
 
-def hokku(hash, syllables_array)
+def run(str, syllables_array)
+  return [] if str.nil?
+  hash = syllables str
   hokku_candidates = []
   0.upto hash.size do |i|
-    hokku_candidates << find(hash, i, syllables_array.inject(&:+))
+    hokku_candidates << find(hash, i, syllables_array.sum)
   end
   hokku_candidates.uniq!.compact!
+
+  all_hokkus = []
 
   hokku_candidates[0..-1].each do |candidate|
     begin
@@ -57,21 +81,20 @@ def hokku(hash, syllables_array)
 
       index = 0
       size = 0
-      syllables_array.each do |string_size|
-        result = find(candidate.first, index, string_size)
+      syllables_array.each do |word_size|
+        result = find(candidate.first, index, word_size)
 
         break if result.nil?
-        index = result.last+1
+        index = result.last + 1
         size += result.first.size
-        break if result.last+1!=size
+        break if result.last + 1 != size
         hokku << result
       end
 
-      next if hokku.map{|a| a.first.map(&:last).inject(:+)}.inject(:+) != syllables_array.inject(&:+)
+      next if hokku.map {|a| a.first.map(&:last).inject(:+)}.inject(:+) != syllables_array.inject(&:+)
 
-      hokku = hokku.map{|a| a.first.map(&:first).join(' ')}.join("\n")
-      puts hokku
-      puts
+      hokku = hokku.map {|a| a.first.map(&:first).join(' ')}.join("\n")
+      all_hokkus << hokku
 
     rescue => e
       p candidate
@@ -79,38 +102,20 @@ def hokku(hash, syllables_array)
       pp e.backtrace[0..4]
     end
   end
+  all_hokkus
 end
 
-str = 'Для меня деньги - бумага, для тебя - свобода.
-На американскую мечту сегодня мода.
-К этой мечте стремишься ты, -
-Работать роботом ради бумажной мечты.
+set :port, 3000
 
-Солнечным утром
-Неожиданный
-Затаился лосоось
-В кустах черники.
-
-Ты - менеджер среднего звена.
-Ты не работаешь "Под", ты работаешь "На".
-Твой этот век - твоя компьютерная эра.
-Главное не человек, а его карьера.'
-
-# address = 'http://lib.ru/POEZIQ/TWARDOWSKIJ/terkin.txt_Ascii.txt'
-# address = 'http://lib.ru/SHAKESPEARE/sonets.txt_Ascii.txt'
-
-# address = 'http://lib.ru/JAPAN/BASE/base.txt_Ascii.txt'
-address = 'http://lib.ru/POEZIQ/ahmadulina.txt_Ascii.txt'
-str = Net::HTTP.get(URI(address)).encode!('utf-8', 'koi8-r')
-
-hash = syllables str
-
-puts 'Hokku'
-puts '------------------------------------------'
-puts
-hokku hash, [5, 7, 5]
-
-puts 'Tanka'
-puts '------------------------------------------'
-puts
-hokku hash, [5, 7, 5, 7, 7]
+get '/' do
+  @str = params[:str]
+  @hokkus = []
+  @tankas = []
+  erb :index
+end
+post '/' do
+  @str = params[:str]
+  @hokkus = run(@str, [5, 7, 5])
+  @tankas = run(@str, [5, 7, 5, 7, 7])
+  erb :index
+end

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+<table style="width: 100%;">
+  <tr style="vertical-align: top;">
+
+    <td style="padding: 1%">
+      <form action="/" method="POST">
+        <textarea name="str" rows="50" cols="50" style="width: 100%;">
+<%= @str || '' %>
+        </textarea>
+        <input type="submit">
+      </form>
+    </td>
+
+    <td style="min-width: 100px;">
+      <table id="hokku">
+        <% @hokkus.each do |hokku| %>
+            <tr>
+              <td>
+                <% hokku.split("\n").each do |str| %>
+                  <%= str %>
+                    <br>
+                <% end %>
+                <br>
+              </td>
+            </tr>
+        <% end %>
+      </table>
+    </td>
+
+    <td style="min-width: 100px;">
+      <table id="tanka">
+        <% @tankas.each do |tanka| %>
+            <tr>
+              <td>
+                <% tanka.split("\n").each do |str| %>
+                    <%= str %>
+                    <br>
+                <% end %>
+                <br>
+              </td>
+            </tr>
+        <% end %>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
